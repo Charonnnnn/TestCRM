@@ -1,0 +1,130 @@
+{% extends 'my_admin/table_index.html' %}
+{% load my_tags %}
+
+{% block extra-css-resources %}
+    <style>
+        .filter-select-box {
+            height: 250px !important;
+            width: 100%;
+            border-radius: 5px;
+        }
+    </style>
+{% endblock %}
+
+{% block container %}
+
+    <div class="panel panel-info">
+        <div class="panel-heading">
+            <h3 class="panel-title">
+                {{ model_name }}
+            </h3>
+        </div>
+
+        <div class="panel-body">
+            <form class="form-horizontal" role="form" method="post" onsubmit="return SelectAllChosenData()">
+                {% csrf_token %}
+                <span style="color: red">{{ model_form_obj.errors }}</span>
+                {% for field in model_form_obj %}
+                    <div class="form-group">
+                        <!-- 输出label标签字, required的就粗体 -->
+                        <label class="col-sm-2 control-label" style="font-weight: normal">
+                            {# {{ field.field.required }}  <!-- true/false --> #}
+                            {% if field.field.required %}
+                                <b>{{ field.label }}</b>
+                            {% else %}
+                                {{ field.label }}
+                            {% endif %}
+                        </label>
+                        <!-- modelform自动生成的表格 - filed (if是判断是否加个左右多选框) -->
+                        <div class="col-md-6">
+                            {% if field.name in admin_class.filter_horizontal %} <!-- field.name => tags -->
+                                <!-- 如果标签名 在 filter_horizontal里面 就创建一个 左右的多选择框-->
+                                <!-- 左边多选框(未选择的数据) -->
+                                <div class='col-xs-5'>
+                                    {% get_m2m_obj_list admin_class field model_form_obj as m2m_obj_list %}
+                                    <!-- 返回m2m所有待选数据 -->
+                                    <select id="id_{{ field.name }}_from" multiple class="filter-select-box">
+                                        {% if field.name in admin_class.readonly_fields and not admin_class.is_form_add %}
+                                            {% for obj in m2m_obj_list %}
+                                                <option value="{{ obj.id }}" disabled>{{ obj }}</option>
+                                            {% endfor %}
+                                        {% else %}
+                                            {% for obj in m2m_obj_list %}
+                                                <option ondblclick="MoveElementTo(this,'id_{{ field.name }}_to','id_{{ field.name }}_from')"
+                                                        value="{{ obj.id }}">{{ obj }}</option>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </select>
+                                </div>
+                                <!-- 中间按钮 -->
+                                <div class="col-md-1">
+                                    <span class="glyphicon glyphicon-arrow-right" aria-hidden="true"></span>
+                                    <span class="glyphicon glyphicon-arrow-left" aria-hidden="true"></span>
+                                </div>
+                                <!-- 右边多选框(已选择的数据) -->
+                                <div class='col-xs-5'>
+                                    {% get_m2m_selected_obj_list model_form_obj field as selected_obj_list %}
+                                    <!-- 返回m2m所有待选数据 -->
+                                    <!-- tag="chosen_list" 自定义标签, 用于提交所有选的数据 -->
+                                    <select tag="chosen_list" id="id_{{ field.name }}_to" name="{{ field.name }}" multiple class="filter-select-box">
+                                        {% if field.name in admin_class.readonly_fields and not admin_class.is_form_add %}
+                                            {% for obj in selected_obj_list %}
+                                                <option value="{{ obj.id }}" disabled>{{ obj }}</option>
+                                            {% endfor %}
+                                        {% else %}
+                                            {% for obj in selected_obj_list %}
+                                                <option value="{{ obj.id }}"
+                                                        ondblclick="MoveElementTo(this,'id_{{ field.name }}_from','id_{{ field.name }}_to')">{{ obj }}</option>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </select>
+                                </div>
+                            {% else %}
+
+                            {{ field }}
+                            <span style="color: gray">{{ field.help_text }}</span>
+                            <span style="color: red">{{ field.errors.as_text }}</span>
+                                                        {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+
+                {% if not admin_class.readonly_table %}
+                    <div class="form-group">
+                        {% if change_delete_add == 'change' %}  <!-- If change page then has delete button -->
+                            <div class="col-sm-2">
+                                <a class="btn btn-danger" href="{% url 'table_obj_delete' app_name model_name model_form_obj.instance.id %}">Delete</a>
+                            </div>
+                        {% else %} <!-- else it is add page, not need delete button -->
+
+                        {% endif %}
+
+                        <div class="col-sm-10 ">
+                            <button type="submit" class="btn btn-success pull-right">Save</button>
+                        </div>
+                    </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+    <script>
+        function MoveElementTo(curr_ele, target_id, new_target_id){
+            var opt_ele = "<option value='" + $(curr_ele).val() + "' ondblclick=MoveElementTo(this,'" + new_target_id + "','" + target_id + "')>" + $(curr_ele).text() + "</option>";
+            $("#" + target_id).append(opt_ele);
+            $(curr_ele).remove();
+        }
+
+        // 右边多选框里的数据, 提交前全选
+        function SelectAllChosenData() {
+            $("select[tag='chosen_list'] option").each(function () {
+                $(this).prop('selected',true);
+            });
+
+            //remove all disabled attrs
+            $("form").find("[disabled]").removeAttr("disabled");
+            return true;
+        }
+
+    </script>
+
+{% endblock %}

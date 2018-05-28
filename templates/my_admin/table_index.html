@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+
+{% block body %}
+
+    <body>
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="/">TestCRM</a>
+            </div>
+            <div id="navbar" class="navbar-collapse collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown"
+                           aria-expanded="false">{{ request.user.name }} <span class="caret"></span></a>
+                        <ul class="dropdown-menu" role="menu">
+                            <li><a href="#">配置</a></li>
+                            <li><a href="{% url 'acc_logout' %}">注销</a></li>
+                        </ul>
+                    </li>
+                </ul>
+
+            </div>
+        </div>
+    </nav>
+
+    <div class="container " style="margin: 50px;width: auto">
+        {% block container %}
+            <div class="row">
+                <div class="panel panel-info">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">站点管理 Administration</h3>
+                    </div>
+                    <div class="panel-body">
+                        {% for app_name,custom_admins in table_list.items %}
+                            <table class="table table-hover">
+                                <thead>
+                                <tr>
+                                    <th>{{ app_name }}</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {% for model_name,admin_class in custom_admins.items %}
+                                    <tr>
+                                        <td><a href=" {% url 'table_objs' app_name model_name %} ">{{ model_name }}</a>
+                                        </td>
+                                        {#                                            <td>{{ admin_class }}</td>#}
+                                        <td>add</td>
+                                        <td>change</td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endblock %}
+    </div>
+    </body>
+
+{% endblock %}

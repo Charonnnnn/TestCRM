@@ -1,0 +1,135 @@
+{% extends 'my_admin/table_index.html' %}
+{% load my_tags %}
+
+{% block container %}
+
+    <div class="panel panel-info">
+        <div class="panel-heading">
+            <h3 class="panel-title">
+                {{ model_name }}
+                {% if not admin_class.readonly_table %}
+                    <a href="{{ request.path }}add/" class="pull-right">Add</a>
+                {% endif %}
+            </h3>
+        </div>
+        <div class="panel-body">
+            <div class="row">
+                <form action="" method="get">
+                    {% for filter_field in admin_class.list_filters %}
+                        <div class="col-xs-2">
+                            <span>{{ filter_field }}</span>
+                            {% render_filter_ele filter_field admin_class filter_conditions %}
+                        </div>
+                    {% endfor %}
+                    <span style="display: block">Go</span>
+                    <button type="SUBMIT" class="btn btn-success">检索</button>
+
+                    <hr>
+                    <div class="row">
+                        <div class="col-xs-8">
+                            <input type="search" name="q" class="form-control" style="margin-left:15px"
+                                   value="{{ search_text }}"
+                                   placeholder='search by {% for search_field in admin_class.search_fields %} {{ search_field }}{% endfor %} (choice use #No search)'>
+                        </div>
+                        <div class="col-xs-2">
+                            <button type="SUBMIT" class="btn btn-success">search</button>
+                        </div>
+                    </div>
+
+                </form>
+
+                <!-- For custom Action -->
+                <div class="row" style="margin-top: 10px">
+                    <form onsubmit="return ActionSubmit(this)" method="POST">
+                        {% csrf_token %}
+                        <div class="col-xs-2">
+                            <select id="action_list" name="action" class="form-control" style="margin-left:15px">
+                                <option value="">---------</option>
+                                {% for action in admin_class.actions %}
+                                    <option value="{{ action }}">{% get_action_verbose_name admin_class action %}</option>
+                                {% endfor %}
+                            </select>
+
+                        </div>
+                        <div class="col-xs-1">
+                            <button type="submit" class="btn">Go</button>
+                        </div>
+                    </form>
+                </div>
+
+            </div>
+
+            <table class="table table-hover">
+                <thead>
+                <tr>
+                    <!-- For Action -->
+                    <th style="width: 35px"><input type="checkbox" onclick="CheckAllToggle(this)"></th>
+                    {% for col in admin_class.list_display %}
+                        {% build_cols col order_key filter_conditions search_text %}
+                    {% endfor %}
+                </tr>
+                </thead>
+                <tbody>
+                {% for obj in query_sets %}
+                    <tr>
+
+                        <!-- For Action -->
+                        <td><input tag="obj_checkbox" type="checkbox" value="{{ obj.id }}"></td>
+                        {% build_rows request obj admin_class %}
+                    </tr>
+                {% endfor %}
+                </tbody>
+                <tfoot>
+                <tr>
+                    <td>总计: {{ query_sets.paginator.count }}条</td>
+                </tr>
+                </tfoot>
+            </table>
+
+            <nav>
+                <ul class="pagination">
+                    {% build_paginators query_sets filter_conditions last_order search_text %}
+                </ul>
+            </nav>
+
+        </div>
+    </div>
+    <!-- For Action -->
+    <script>
+        function CheckAllToggle(ele) {
+            if ($(ele).prop("checked")) {
+                $("input[tag='obj_checkbox']").prop("checked", true);
+            } else {
+                $("input[tag='obj_checkbox']").prop("checked", false);
+            }
+        }
+
+
+        function ActionSubmit(form_ele) {
+            var selected_ids = [];
+            $("input[tag='obj_checkbox']:checked").each(function () {
+                selected_ids.push($(this).val());
+            })
+            var selected_action = $("#action_list").val();
+            console.log(selected_ids);
+            console.log(selected_action);
+            if (selected_ids.length == 0) {
+                alert("No object got selected!");
+                return
+            }
+            if (!selected_action) {
+                alert("No action got selected!");
+            }
+
+
+            //start submit
+            var selected_ids_ele = "<input name='selected_ids' type='hidden' value='" + selected_ids.toString() + "'>";
+            $(form_ele).append(selected_ids_ele);
+
+            return true;
+        }
+
+    </script>
+
+
+{% endblock %}
